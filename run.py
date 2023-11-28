@@ -671,7 +671,9 @@ def load_base_model_and_tokenizer(name):
             base_model_kwargs.update(dict(torch_dtype=torch.float16))
         if 'gpt-j' in name:
             base_model_kwargs.update(dict(revision='float16'))
-        base_model = transformers.AutoModelForCausalLM.from_pretrained(name, **base_model_kwargs, cache_dir=cache_dir)
+        base_model = transformers.AutoModelForCausalLM.from_pretrained(name, 
+                                                                       **base_model_kwargs) 
+                                                                       #cache_dir=cache_dir)
     else:
         base_model = None
 
@@ -720,7 +722,7 @@ def eval_supervised(data, model):
 
     # free GPU memory
     del detector
-    torch.cuda.empty_cache()
+    torch.mps.empty_cache()
 
     return {
         'name': model,
@@ -743,7 +745,7 @@ def eval_supervised(data, model):
 
 
 if __name__ == '__main__':
-    DEVICE = "cuda"
+    DEVICE = "mps"
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default="xsum")
@@ -821,8 +823,10 @@ if __name__ == '__main__':
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     print(f"Using cache dir {cache_dir}")
+    cache_dir = None
 
-    GPT2_TOKENIZER = transformers.GPT2Tokenizer.from_pretrained('gpt2', cache_dir=cache_dir)
+    GPT2_TOKENIZER = transformers.GPT2Tokenizer.from_pretrained('gpt2', #cache_dir=cache_dir,
+                                                                local_files_only=False)
 
     # generic generative model
     base_model, base_tokenizer = load_base_model_and_tokenizer(args.base_model_name)
@@ -863,7 +867,7 @@ if __name__ == '__main__':
         print(f'Loading SCORING model {args.scoring_model_name}...')
         del base_model
         del base_tokenizer
-        torch.cuda.empty_cache()
+        torch.mps.empty_cache()
         base_model, base_tokenizer = load_base_model_and_tokenizer(args.scoring_model_name)
         load_base_model()  # Load again because we've deleted/replaced the old model
 
